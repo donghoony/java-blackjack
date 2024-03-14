@@ -5,8 +5,8 @@ import blackjack.money.BetMoney;
 import blackjack.money.BetTable;
 import blackjack.money.Money;
 import blackjack.player.Dealer;
+import blackjack.player.Participant;
 import blackjack.player.Participants;
-import blackjack.player.Player;
 import blackjack.resultstate.MatchResult;
 import blackjack.resultstate.Referee;
 import blackjack.view.InputView;
@@ -33,7 +33,7 @@ public class BlackJackGame {
         BetTable betTable = placeParticipantsBet(participants);
 
         initGame(deck, dealer, participants);
-        drawMoreForPlayers(deck, participants);
+        drawMoreForParticipants(deck, participants);
         drawMoreForDealer(deck, dealer);
 
         showCardsWithScore(dealer, participants);
@@ -68,28 +68,28 @@ public class BlackJackGame {
     private void showInitCard(Dealer dealer, Participants participants) {
         outputView.printDealerFirstCard(dealer.revealCardsOnFirstPhase());
 
-        for (Player player : participants.getPlayers()) {
-            outputView.printPlayerCards(player.getName(), player.getCards());
+        for (Participant participant : participants.getParticipants()) {
+            outputView.printPlayerCards(participant.getName(), participant.getCards());
         }
         outputView.printNewLine();
     }
 
-    private void drawMoreForPlayers(Deck deck, Participants participants) {
-        for (Player player : participants.getPlayers()) {
-            drawMoreForParticipant(deck, player);
+    private void drawMoreForParticipants(Deck deck, Participants participants) {
+        for (Participant participant : participants.getParticipants()) {
+            drawMoreForParticipant(deck, participant);
         }
         outputView.printNewLine();
     }
 
-    private void drawMoreForParticipant(Deck deck, Player player) {
-        while (player.hasDrawableScore() && isParticipantWantsToDrawMore(player)) {
-            player.drawCard(deck.draw());
-            outputView.printPlayerCards(player.getName(), player.getCards());
+    private void drawMoreForParticipant(Deck deck, Participant participant) {
+        while (participant.hasDrawableScore() && isParticipantWantsToDrawMore(participant)) {
+            participant.drawCard(deck.draw());
+            outputView.printPlayerCards(participant.getName(), participant.getCards());
         }
     }
 
-    private boolean isParticipantWantsToDrawMore(Player player) {
-        outputView.printDrawMoreCardRequest(player.getName());
+    private boolean isParticipantWantsToDrawMore(Participant participant) {
+        outputView.printDrawMoreCardRequest(participant.getName());
         return inputView.isReadCommandYes();
     }
 
@@ -103,20 +103,21 @@ public class BlackJackGame {
 
     private void showCardsWithScore(Dealer dealer, Participants participants) {
         outputView.printDealerCardsWithScore(dealer.getCards(), dealer.getScore());
-        for (Player player : participants.getPlayers()) {
-            outputView.printPlayerCardsWithScore(player.getName(), player.getCards(), player.getScore());
+        for (Participant participant : participants.getParticipants()) {
+            outputView.printPlayerCardsWithScore(participant.getName(), participant.getCards(), participant.getScore());
         }
         outputView.printNewLine();
     }
 
     private void showPlayersProfit(BetTable betTable, Dealer dealer, Participants participants) {
         outputView.printProfitMessage();
-        showDealerProfit(betTable, participants, dealer);
+        showDealerProfit(betTable, dealer, participants);
         showParticipantsProfit(betTable, dealer, participants);
     }
 
-    private void showDealerProfit(BetTable betTable, Participants participants, Dealer dealer) {
-        Money dealerProfit = participants.getPlayers().stream()
+    private void showDealerProfit(BetTable betTable, Dealer dealer, Participants participants) {
+        Money dealerProfit = participants.getParticipants()
+                .stream()
                 .map(player -> calculateProfit(betTable, dealer, player))
                 .reduce(Money.zero(), Money::add)
                 .profitOnLose();
@@ -124,14 +125,14 @@ public class BlackJackGame {
     }
 
     private void showParticipantsProfit(BetTable betTable, Dealer dealer, Participants participants) {
-        for (Player player : participants.getPlayers()) {
-            Money profit = calculateProfit(betTable, dealer, player);
-            outputView.printPlayerProfit(player.getName(), profit.getAmount());
+        for (Participant participant : participants.getParticipants()) {
+            Money profit = calculateProfit(betTable, dealer, participant);
+            outputView.printPlayerProfit(participant.getName(), profit.getAmount());
         }
     }
 
-    private Money calculateProfit(BetTable betTable, Dealer dealer, Player player) {
-        MatchResult result = Referee.judge(player, dealer);
-        return betTable.calculateProfitByName(player.getName(), result);
+    private Money calculateProfit(BetTable betTable, Dealer dealer, Participant participant) {
+        MatchResult result = Referee.judge(participant, dealer);
+        return betTable.calculateProfitByName(participant.getName(), result);
     }
 }
